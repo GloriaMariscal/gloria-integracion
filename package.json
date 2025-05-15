@@ -1,9 +1,9 @@
 {
     "scripts": {
-    "start": "node src/server.js",
+    "start": "node gloria-integracion/src/server.js",
     "test": "jest"
   },
-  
+
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.3",
