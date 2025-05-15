@@ -1,6 +1,6 @@
 {
     "scripts": {
-    "start": "node gloria-integracion/src/server.js",
+    "start": "node src/server.js",
     "test": "jest"
   },
 
