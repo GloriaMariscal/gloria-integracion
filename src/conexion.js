@@ -1,21 +1,3 @@
-/*const mysql = require('mysql');
-
-// MySQL Connection
-const connection = mysql.createConnection({
-    host: 'localhost',
-    port: 3306,
-    user: 'root',
-    password: 'root12',
-    database: 'red_social',
-});
-
-connection.connect((err) => {
-    if (err) throw err;
-    console.log('Connected to MySQL database');
-});
-
-module.exports = connection;*/
-
 const mysql = require('mysql');
 
 // Conexión a MySQL usando variables de entorno de Railway
