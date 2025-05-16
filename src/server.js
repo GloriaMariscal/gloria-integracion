@@ -179,7 +179,13 @@ app.use("/", comentariosRoutes); // Activa la ruta de comentarios
 
 
   
-app.listen(port, () => {
+/*app.listen(port, () => {
     console.log(`App listening at http://localhost:${port}`);
+});*/
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`App listening at http://localhost:${PORT}`);
 });
 
