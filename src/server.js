@@ -13,17 +13,22 @@ const chatRoutes = require("./routes/chat");
 const seguirRoutes = require("./routes/seguir");
 const guardadoRoutes = require("./routes/elementoguardado");
 const connection = require('./conexion');
-const { deleteAccount } = require('./controller/loginController');
-const { deactivateAccount } = require('./controller/loginController');
-const { restoreAccount } = require('./controller/loginController'); 
+const { deleteAccount, deactivateAccount, restoreAccount } = require('./controller/loginController'); 
 
 const terminosRoutes = require('./routes/terminos');
 const acercaRoutes = require('./routes/acerca');
 const contactoRoutes = require('./routes/contacto');
 
-const app = express();
-const port = 3000;
+const fileUpload = require("express-fileupload");
+const busquedaRoutes = require("./routes/busqueda");
+const adminRoutes = require('./routes/admin');
 const bloqueoRoutes = require('./routes/bloqueo');
+const comentariosRoutes = require('./routes/comentarios');
+
+const http = require('http');
+const WebSocket = require('ws');
+
+const app = express();
 
 // Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -33,6 +38,8 @@ app.use(session({
     resave: false,
     saveUninitialized: true
 }));
+
+app.use(fileUpload());
 
 app.use((req, res, next) => {
     const rutasPublicas = ["/login", "/registro", "/assets", "/images", "/css", "/js", "/register", "/recovery", "restore-account"];
@@ -49,12 +56,56 @@ app.use((req, res, next) => {
     next();
 });
 
+// Configurar express para servir archivos estáticos desde la carpeta 'assets'
+app.use('/assets', express.static(__dirname + '/assets'));
 
-// Configuración para WebSocket
-const WebSocket = require('ws'); // Importar WebSocket
-const wss = new WebSocket.Server({ port: 8080 }); // Servidor WebSocket en puerto 8080
+// Rutas
+app.use('/', loginRoutes);
+app.use('/', imageRoutes);
+app.use('/', publicacionesRoutes);
+app.use('/', perfilRoutes);
+app.use('/', followRoutes);
+app.use('/', likeRoutes);
+app.use('/', seguirRoutes);
+app.use('/', guardadoRoutes);
+app.use('/', terminosRoutes);
+app.use('/', acercaRoutes);
+app.use('/', contactoRoutes);
+app.use('/', adminRoutes);
+app.use('/', bloqueoRoutes);
+app.use('/', encuestasRoutes);
+app.use('/', chatRoutes);
+app.use('/', busquedaRoutes);
+app.use('/', comentariosRoutes);
 
-// Guardar los sockets de los usuarios conectados
+// Rutas específicas
+app.get('/borrar', (req, res) => {
+    console.log("Entrando a la vista borrar");
+    if (req.session.userId) {
+        res.render('borrar');
+    } else {
+        res.redirect('/index');
+    }
+});
+app.post('/borrar', deleteAccount);
+app.post('/desactivar', deactivateAccount);
+app.get('/recovery', (req, res) => res.render('recovery'));
+app.post('/restore-account', restoreAccount);
+
+// Plantillas
+app.set('view engine', 'ejs');
+app.set('views', './src/views');
+
+app.use((req, res, next) => {
+    console.log("Sesión activa:", req.session);
+    console.log("Usuario autenticado:", req.session.userId);
+    next();
+});
+
+// Crear servidor HTTP y WebSocket en el mismo puerto
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
+
 const connectedUsers = {};
 
 wss.on('connection', (ws, req) => {
@@ -82,7 +133,7 @@ wss.on('connection', (ws, req) => {
 
                 console.log('Mensaje guardado en la base de datos');
 
-                // Enviar mensaje a ambos usuarios conectados
+                // Enviar mensaje a todos los clientes conectados
                 wss.clients.forEach(client => {
                     if (client.readyState === WebSocket.OPEN) {
                         client.send(JSON.stringify({
@@ -101,86 +152,12 @@ wss.on('connection', (ws, req) => {
         }
     });
 
-    // Manejar desconexión
     ws.on('close', () => {
         console.log('Cliente desconectado');
     });
 });
 
-
-const fileUpload = require("express-fileupload");
-app.use(fileUpload()); // Este middleware debería ser lo primero para manejar archivos
-// Ruta para cargar una imagen
-
-// buscar usuarios
-const busquedaRoutes = require("./routes/busqueda");
-app.use("/", busquedaRoutes);
-
-// Importar ruta de admin
-const adminRoutes = require('./routes/admin');
-
-// Configurar express para servir archivos estáticos desde la carpeta 'assets'
-app.use('/assets', express.static(__dirname + '/assets'));
-
-// Ruta para mostrar la página de borrar cuenta
-app.get('/borrar', (req, res) => {
-    console.log("Entrando a la vista borrar");
-    if (req.session.userId) {
-        res.render('borrar');
-    } else {
-        res.redirect('/index');
-    }
-});
-
-
-// Ruta para borrar cuenta
-app.post('/borrar', deleteAccount);
-
-// Ruta para desactivar cuenta
-app.post('/desactivar', deactivateAccount);
-
-
-// Ruta para mostrar el formulario de recuperación
-app.get('/recovery', (req, res) => {
-    res.render('recovery');
-  });
-
-  app.post('/restore-account', restoreAccount);
-//plantillas
-app.set('view engine', 'ejs');
-app.set('views', './src/views');
-
-// Routes
-app.use('/', loginRoutes);
-app.use('/', imageRoutes);
-app.use('/', publicacionesRoutes);
-app.use('/', perfilRoutes);
-app.use('/', followRoutes);
-app.use('/', likeRoutes);
-app.use('/', seguirRoutes);
-app.use('/', guardadoRoutes);
-app.use('/', terminosRoutes);
-app.use('/', acercaRoutes);
-app.use('/', contactoRoutes);
-app.use('/', adminRoutes)
-app.use('/', bloqueoRoutes);
-app.use('/', encuestasRoutes);
-app.use('/', chatRoutes);
-
-app.use((req, res, next) => {
-    console.log("Sesión activa:", req.session);
-    console.log("Usuario autenticado:", req.session.userId);
-    next();
-});
-
-
-const comentariosRoutes = require('./routes/comentarios'); // Importa la ruta de comentarios
-app.use("/", comentariosRoutes); // Activa la ruta de comentarios
-
-
-
 const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log(`App listening at http://localhost:${PORT}`);
+server.listen(PORT, () => {
+    console.log(`App listening at http://localhost:${PORT}`);
 });
