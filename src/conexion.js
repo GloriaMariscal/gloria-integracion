@@ -1,20 +1,24 @@
 const mysql = require('mysql2');
+require('dotenv').config();
 
-// Conexión a MySQL usando variables de entorno de Railway
-const connection = mysql.createConnection({
-    host: process.env.MYSQLHOST,
-    port: process.env.MYSQLPORT,
-    user: process.env.MYSQLUSER,
-    password: process.env.MYSQLPASSWORD,
-    database: process.env.MYSQLDATABASE,
+const pool = mysql.createPool({
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 3306,
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || 'admin',
+    database: process.env.DB_NAME || 'red_social',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 });
 
-connection.connect((err) => {
+pool.getConnection((err, connection) => {
     if (err) {
-        console.error('Error de conexión a MySQL:', err);
-        return;
+        console.error('Error al conectar con la base de datos:', err);
+    } else {
+        console.log('Conectado a la base de datos MySQL');
+        connection.release();
     }
-    console.log('Conectado a MySQL con éxito');
-});
+}); 
 
-module.exports = connection;
+module.exports = pool;
